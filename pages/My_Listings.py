@@ -50,7 +50,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.session_state.get("delete_notice"):
-    st.success(st.session_state.delete_notice)
+    st.toast("Listing deleted 🗑️", icon="✅")
     st.session_state.delete_notice = None
     
 # ---------- FETCH LISTINGS ----------
