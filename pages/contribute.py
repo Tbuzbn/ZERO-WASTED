@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title("Contribute Resouce")
+st.title("Contribute Resource")
 st.caption("Share surplus resources with the community")
 
 # ---------- RESOURCE DETAILS ----------
