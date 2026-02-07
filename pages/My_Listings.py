@@ -8,6 +8,8 @@ from database.database import (
 
 
 st.set_page_config(page_title="My Listings | ZERO WASTED", layout="wide")
+st.session_state.setdefault("delete_notice", None)
+
 
 # ---------- STYLE ----------
 st.markdown("""
@@ -47,6 +49,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+if st.session_state.get("delete_notice"):
+    st.success(st.session_state.delete_notice)
+    st.session_state.delete_notice = None
+    
 # ---------- FETCH LISTINGS ----------
 try:
     listings = get_active_listings()
@@ -87,13 +93,14 @@ else:
                 st.session_state[edit_key] = True
 
             if st.button("🗑️ Delete", key=f"delete_{listing_id}", use_container_width=True):
-                try:
-                    delete_listing(listing_id)
-                    st.success("Listing deleted.")
-                    st.rerun()
-                except Exception as e:
-                    st.error("Failed to delete listing.")
-                    st.caption(str(e))
+              try:
+                  delete_listing(listing_id)
+                  st.session_state.delete_notice = "Listing deleted successfully."
+                  st.rerun()
+              except Exception as e:
+                  st.error("Failed to delete listing.")
+                  st.caption(str(e))
+
 
         # ---------- EDIT FORM ----------
         if st.session_state.get(edit_key):
