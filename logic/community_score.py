@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """
 Impact Score Calculation Logic
 
@@ -39,3 +40,7 @@ def calculate_impact_score(
     impact_score = max(0.0, min(impact_score, 1.0))
 
     return impact_score
+=======
+def lol():
+    return 42
+>>>>>>> bcc343291d89b6737f40eef524c0b1c39369c315
