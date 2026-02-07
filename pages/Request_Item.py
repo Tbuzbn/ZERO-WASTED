@@ -1,10 +1,12 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     from logic.database.database import add_request
 except ImportError:
     from database.database import add_request
+
+from logic.location_picker import detect_location, location_display
 
 st.set_page_config(page_title="Request | ZERO WASTED", layout="centered")
 
@@ -20,7 +22,6 @@ st.markdown("""
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 18px;
   padding: 22px;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
   margin-bottom: 18px;
 }
 .title {
@@ -35,9 +36,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- STATE ----------
-st.session_state.setdefault("location_detected", False)
+# ---------- SESSION STATE ----------
 st.session_state.setdefault("last_request", None)
+st.session_state.setdefault("request_location_label", "")
+st.session_state.setdefault("request_location_coords", None)
 
 # ---------- HEADER ----------
 st.markdown("""
@@ -49,22 +51,19 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---------- LOCATION ----------
+# ---------- LOCATION (OUTSIDE FORM) ----------
 st.markdown("""
 <div class="card">
   <div class="title" style="font-size:22px;">Location</div>
   <div class="desc">
     Used to find nearby contributions. Exact coordinates are never shown publicly.
   </div>
+</div>
 """, unsafe_allow_html=True)
 
-if st.button("📍 Detect My Location"):
-    st.session_state.location_detected = True
-
-if st.session_state.location_detected:
-    st.success("Location detected successfully (demo).")
-
-st.markdown("</div>", unsafe_allow_html=True)
+# Detect + show location
+detect_location("request_location")
+location_display("request_location")
 
 # ---------- FORM ----------
 with st.form("request_form"):
@@ -84,14 +83,16 @@ with st.form("request_form"):
         step=1
     )
 
+    # Auto-filled location field
     location_label = st.text_input(
-        "Visible Location (city / area)",
-        placeholder="e.g. Indiranagar, Bengaluru"
+        "Area / Locality",
+        value=st.session_state.get("request_location_label", ""),
+        placeholder="Lat, Lng will appear after detection"
     )
 
     request_message = st.text_area(
         "Optional Message to Contributor",
-        placeholder="Any context that might help with matching (timing, purpose, constraints, etc.)",
+        placeholder="Any context that might help with matching",
         height=110
     )
 
@@ -104,48 +105,53 @@ with st.form("request_form"):
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if submitted:
-        payload = {
-            "type": resource_type,
-            "quantity": int(quantity),
-            "message": request_message.strip(),
-            "requester_type": requester_type,
-            "location_label": location_label.strip(),
-            "created_at": datetime.utcnow(),
-            "status": "active"
-        }
+# ---------- SUBMIT LOGIC ----------
+if submitted:
+    if st.session_state.get("request_location_coords") is None:
+        st.error("Please detect your location before submitting.")
+        st.stop()
 
-        try:
-            add_request(payload)
-            st.session_state.last_request = payload
-            st.success("Your request has been submitted!")
-            st.toast("Nearby contributors will be notified 🌱")
+    final_label = (
+        location_label
+        or st.session_state["request_location_label"]
+        or "Unknown location"
+    )
 
-        except Exception as e:
-            st.error("Something went wrong while submitting the request.")
-            st.caption(str(e))
+    payload = {
+        "type": resource_type,
+        "quantity": int(quantity),
+        "message": request_message.strip(),
+        "requester_type": requester_type,
+        "location_label": final_label,
+        "location": st.session_state["request_location_coords"],
+        "created_at": datetime.now(timezone.utc),
+        "status": "active"
+    }
+
+    try:
+        add_request(payload)
+        st.session_state.last_request = payload
+        st.success("Your request has been submitted!")
+        st.toast("Nearby contributors will be notified 🌱")
+    except Exception as e:
+        st.error("Something went wrong while submitting the request.")
+        st.caption(str(e))
 
 # ---------- CONFIRMATION ----------
-if "last_request" in st.session_state and st.session_state.last_request:
+if st.session_state.last_request:
     data = st.session_state.last_request
 
-    st.markdown("""
+    st.markdown(f"""
     <div class="card" style="border-left:4px solid #3b82f6;">
       <div class="title" style="font-size:20px;">Request Summary</div>
       <div class="desc">
-        <strong>{qty} × {rtype}</strong><br>
-        Requested by: {who}<br>
-        Location: {loc}<br>
-        Message: {msg}
+        <strong>{data['quantity']} × {data['type']}</strong><br>
+        Requested by: {data['requester_type']}<br>
+        Location: {data['location_label']}<br>
+        Message: {data['message'] or "No message provided"}
       </div>
     </div>
-    """.format(
-        qty=data["quantity"],
-        rtype=data["type"],
-        who=data["requester_type"],
-        loc=data["location_label"] or "Not specified",
-        msg=data["message"] or "No message provided"
-    ), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # ---------- FOOTER ----------
 st.caption("Requests are matched based on proximity, availability, and urgency.")
