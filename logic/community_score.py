@@ -1,8 +1,6 @@
 import math
 
-# ----------------------------------------
-# MONTHLY COMMUNITY SCORE (2-MONTH GRACE)
-# ----------------------------------------
+
 
 def calculate_monthly_community_score(
     food_kg,
@@ -56,9 +54,6 @@ def calculate_monthly_community_score(
     return raw_score * decay_factor
 
 
-# ----------------------------------------
-# TOTAL COMMUNITY SCORE
-# ----------------------------------------
 
 def calculate_total_community_score(monthly_data):
     """
