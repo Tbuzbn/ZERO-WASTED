@@ -1,13 +1,16 @@
 import streamlit as st
+from datetime import datetime
+
+try:
+    from logic.database.database import add_request
+except ImportError:
+    from database.database import add_request
 
 st.set_page_config(page_title="Request | ZERO WASTED", layout="centered")
 
 # ---------- THEME ----------
 ACCENT = "#22c55e"
 MUTED = "#9ca3af"
-CARD_BG = "#020617"
-BORDER = "rgba(255,255,255,0.06)"
-SHADOW = "0 16px 40px rgba(0,0,0,0.35)"
 
 # ---------- GLOBAL STYLE ----------
 st.markdown("""
@@ -81,6 +84,11 @@ with st.form("request_form"):
         step=1
     )
 
+    location_label = st.text_input(
+        "Visible Location (city / area)",
+        placeholder="e.g. Indiranagar, Bengaluru"
+    )
+
     request_message = st.text_area(
         "Optional Message to Contributor",
         placeholder="Any context that might help with matching (timing, purpose, constraints, etc.)",
@@ -97,30 +105,47 @@ with st.form("request_form"):
     st.markdown("</div>", unsafe_allow_html=True)
 
     if submitted:
-        st.session_state.last_request = {
-            "resource_type": resource_type,
-            "quantity": quantity,
+        payload = {
+            "type": resource_type,
+            "quantity": int(quantity),
+            "message": request_message.strip(),
             "requester_type": requester_type,
-            "message": request_message
+            "location_label": location_label.strip(),
+            "created_at": datetime.utcnow(),
+            "status": "active"
         }
 
-        st.success("Your request has been submitted!")
-        st.toast("Your request is now visible to nearby contributors 🌱")
+        try:
+            add_request(payload)
+            st.session_state.last_request = payload
+            st.success("Your request has been submitted!")
+            st.toast("Nearby contributors will be notified 🌱")
 
-# ---------- DYNAMIC CONFIRMATION ----------
-if st.session_state.last_request:
+        except Exception as e:
+            st.error("Something went wrong while submitting the request.")
+            st.caption(str(e))
+
+# ---------- CONFIRMATION ----------
+if "last_request" in st.session_state and st.session_state.last_request:
     data = st.session_state.last_request
 
-    st.markdown(f"""
-    <div class="card" style="border-left:4px solid {ACCENT};">
+    st.markdown("""
+    <div class="card" style="border-left:4px solid #3b82f6;">
       <div class="title" style="font-size:20px;">Request Summary</div>
       <div class="desc">
-        <strong>{data['quantity']} × {data['resource_type']}</strong><br>
-        Requester Type: {data['requester_type']}<br>
-        Message: {data['message'] or "No message provided"}
+        <strong>{qty} × {rtype}</strong><br>
+        Requested by: {who}<br>
+        Location: {loc}<br>
+        Message: {msg}
       </div>
     </div>
-    """, unsafe_allow_html=True)
+    """.format(
+        qty=data["quantity"],
+        rtype=data["type"],
+        who=data["requester_type"],
+        loc=data["location_label"] or "Not specified",
+        msg=data["message"] or "No message provided"
+    ), unsafe_allow_html=True)
 
 # ---------- FOOTER ----------
 st.caption("Requests are matched based on proximity, availability, and urgency.")

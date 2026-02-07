@@ -1,5 +1,7 @@
 import streamlit as st
 from datetime import datetime
+from database.database import add_listing
+
 
 st.set_page_config(page_title="Contribute | ZERO WASTED", layout="centered")
 
@@ -97,28 +99,37 @@ with st.form("contribute_form"):
     submitted = st.form_submit_button("🚀 Publish Listing")
 
     st.markdown("</div>", unsafe_allow_html=True)
-
+    
+# ---------- DYNAMIC CONFIRMATION ----------
     if submitted:
-        st.session_state.last_submission = {
-            "resource_type": resource_type,
-            "quantity": quantity,
-            "location": location_label,
-            "message": message
+        payload = {
+            "type": resource_type,
+            "quantity": int(quantity),
+            "message": message.strip(),
+            "location_label": location_label.strip(),
+            "created_at": datetime.utcnow(),
+            "status": "active"
         }
 
-        st.success("Your contribution has been published!")
-        st.toast("Thanks for contributing to ZERO WASTED 🌱")
+        try:
+            add_listing(payload)
+            st.session_state.last_submission = payload
+            st.success("Your contribution has been published!")
+            st.toast("Thanks for contributing to ZERO WASTED 🌱")
 
-# ---------- DYNAMIC CONFIRMATION ----------
-if st.session_state.last_submission:
+        except Exception as e:
+            st.error("Something went wrong while publishing the listing.")
+            st.caption(str(e))
+
+if "last_submission" in st.session_state and st.session_state.last_submission:
     data = st.session_state.last_submission
 
     st.markdown(f"""
     <div class="card" style="border-left:4px solid {ACCENT};">
       <div class="title" style="font-size:20px;">Submission Summary</div>
       <div class="desc">
-        <strong>{data['quantity']} × {data['resource_type']}</strong><br>
-        Location: {data['location'] or "Not specified"}<br>
+        <strong>{data['quantity']} × {data['type']}</strong><br>
+        Location: {data['location_label'] or "Not specified"}<br>
         Message: {data['message'] or "No message provided"}
       </div>
     </div>
@@ -126,3 +137,5 @@ if st.session_state.last_submission:
 
 # ---------- FOOTER ----------
 st.caption("Every contribution increases your Community Score and unlocks rewards.")
+
+
