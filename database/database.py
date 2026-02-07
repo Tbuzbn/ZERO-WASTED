@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from bson import ObjectId
 
 MONGO_URI = "mongodb+srv://zerowasted_rahul:ykBbyBjqaRMBy9tP@zerowastedcluster.5fmxgot.mongodb.net/"
 
@@ -11,6 +12,12 @@ requests_col = db["requests"]
 
 
 # Insertion functions
+def update_listing(listing_id, updates: dict):
+    return listings_col.update_one(
+        {"_id": ObjectId(listing_id)},
+        {"$set": updates}
+    )
+
 def add_listing(data: dict):
     return listings_col.insert_one(data)
 
@@ -18,8 +25,12 @@ def add_request(data: dict):
     return requests_col.insert_one(data)
 
 # Retrieval functions
-def get_total_listings() -> int:
-    return listings_col.count_documents({})
+def get_active_listings():
+    return list(
+        listings_col
+        .find({"status": "active"})
+        .sort("created_at", -1)
+    )
 
 def get_total_requests() -> int:
     return requests_col.count_documents({})

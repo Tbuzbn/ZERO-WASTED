@@ -1,37 +1,40 @@
 import streamlit as st
 from datetime import datetime
-from database.database import get_total_listings
-    
+from database.database import (
+    get_active_listings,
+    delete_listing,
+    update_listing
+)
+
 
 st.set_page_config(page_title="My Listings | ZERO WASTED", layout="wide")
 
-# ---------- THEME ----------
+# ---------- STYLE ----------
 st.markdown("""
 <style>
 .card {
-  background: white;
+  background: #0b1220;
   border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  padding: 1.4rem;
+  border: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 1rem;
 }
 .title {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #00b87c;
+  color: #22c55e;
 }
 .meta {
-  font-size: 0.85rem;
-  color: #6b7280;
+  font-size: 0.9rem;
+  color: #9ca3af;
 }
-.badge {
-  background: #ecfdf5;
-  color: #059669;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+.item-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.item-text {
+  font-size: 0.9rem;
+  color: #d1d5db;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -40,46 +43,99 @@ st.markdown("""
 st.markdown("""
 <div class="card">
   <div class="title">My Active Listings</div>
-  <div class="meta">
-    Resources you’ve shared with the community
-  </div>
+  <div class="meta">Resources you’ve shared with the community</div>
 </div>
 """, unsafe_allow_html=True)
 
-# ---------- FETCH DATA ----------
+# ---------- FETCH LISTINGS ----------
 try:
-    listings = get_active_listings(limit=20)
+    listings = get_active_listings()
 except Exception as e:
     listings = []
-    st.error("Could not fetch listings from database.")
+    st.error("Could not fetch listings.")
     st.caption(str(e))
 
-# ---------- EMPTY STATE ----------
+# ---------- EMPTY ----------
 if not listings:
     st.info("You have no active listings right now.")
 else:
     for item in listings:
-        created = item.get("created_at")
-        created_str = (
-            created.strftime("%d %b %Y, %H:%M")
-            if isinstance(created, datetime)
-            else "Unknown time"
-        )
+        listing_id = str(item["_id"])
+        edit_key = f"edit_{listing_id}"
 
-        st.markdown(f"""
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong>{item.get("quantity", "?")} × {item.get("type", "Item")}</strong>
-            <span class="badge">Active</span>
-          </div>
+        st.session_state.setdefault(edit_key, False)
 
-          <div class="meta" style="margin-top:6px;">
-            Location: {item.get("location_label", "Not specified")} <br>
-            Posted: {created_str}
-          </div>
+        col_main, col_actions = st.columns([5, 2])
 
-          <div style="margin-top:10px;">
-            {item.get("message", "No message provided")}
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # ---------- CARD ----------
+        with col_main:
+            st.markdown(f"""
+            <div class="card">
+              <div class="item-title">
+                {item.get("quantity")} × {item.get("type")}
+              </div>
+              <div class="item-text">
+                <strong>Location:</strong> {item.get("location_label", "Not specified")}<br>
+                <strong>Message:</strong> {item.get("message", "—")}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ---------- ACTIONS ----------
+        with col_actions:
+            if st.button("✏️ Edit", key=f"edit_btn_{listing_id}", use_container_width=True):
+                st.session_state[edit_key] = True
+
+            if st.button("🗑️ Delete", key=f"delete_{listing_id}", use_container_width=True):
+                try:
+                    delete_listing(listing_id)
+                    st.success("Listing deleted.")
+                    st.rerun()
+                except Exception as e:
+                    st.error("Failed to delete listing.")
+                    st.caption(str(e))
+
+        # ---------- EDIT FORM ----------
+        if st.session_state.get(edit_key):
+            with st.form(f"edit_form_{listing_id}"):
+                new_quantity = st.number_input(
+                    "Quantity",
+                    min_value=1,
+                    value=int(item.get("quantity", 1))
+                )
+
+                new_message = st.text_area(
+                    "Message",
+                    value=item.get("message", ""),
+                    height=80
+                )
+
+                new_location = st.text_input(
+                    "Location",
+                    value=item.get("location_label", "")
+                )
+
+                save = st.form_submit_button("💾 Save Changes")
+                cancel = st.form_submit_button("Cancel")
+
+                if save:
+                    try:
+                        update_listing(
+                            listing_id,
+                            {
+                                "quantity": new_quantity,
+                                "message": new_message.strip(),
+                                "location_label": new_location.strip(),
+                                "updated_at": datetime.utcnow()
+                            }
+                        )
+                        st.success("Listing updated.")
+                        st.session_state[edit_key] = False
+                        st.rerun()
+                    except Exception as e:
+                        st.error("Failed to update listing.")
+                        st.caption(str(e))
+
+                if cancel:
+                    st.session_state[edit_key] = False
+                    st.rerun()
