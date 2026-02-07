@@ -9,7 +9,7 @@ def detect_location(state_prefix="location"):
 
     if st.button("📍 Detect My Location", key=f"{state_prefix}_detect"):
         # Demo coordinates (replace later with real geolocation)
-        coords = {"lat": 28.6139, "lng": 77.2090}
+        coords = {"lat": 28.6139, "lng": 97.2090}
 
         label = f"Lat: {coords['lat']}, Lng: {coords['lng']}"
 

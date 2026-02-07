@@ -1,11 +1,6 @@
 import streamlit as st
 from datetime import datetime, timezone
-
-try:
-    from logic.database.database import add_request
-except ImportError:
-    from database.database import add_request
-
+from database.database import add_request
 from logic.location_picker import detect_location, location_display
 
 st.set_page_config(page_title="Request | ZERO WASTED", layout="centered")
