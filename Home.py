@@ -281,12 +281,23 @@ c1, c2, c3 = st.columns([1,2,1])
 with c2:
     a, b = st.columns(2)
     with a:
-        st.button("➕ Contribute Surplus", type="primary", use_container_width=True)
+        if st.button(
+            "➕ Contribute Resources",
+            type="primary",
+            use_container_width=True
+        ):
+            st.switch_page("pages/Contribute.py")
+
     with b:
-        st.button("📩 Request Help", use_container_width=True)
+        if st.button(
+            "📩 Request Resources",
+            use_container_width=True
+        ):
+            st.switch_page("pages/Request_Item.py")
+
 
 # ---------- GRID ----------
-st.markdown("### 🎁 Available Surplus")
+st.markdown("### ✅ Contribute")
 st.write("")
 
 items = get_latest_listings(4)
