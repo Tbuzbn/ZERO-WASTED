@@ -32,12 +32,12 @@ ZERO WASTED streamlines redistribution into **four simple steps**:
 3. **Request Items**  
    NGOs and verified individuals submit specific, real-time needs.
 
-4. **Match & Deliver**  
-   A smart matching algorithm pairs resources based on urgency and proximity.
+4. **Match**  
+   A smart matching algorithm pairs resources based on proximity and other factors.
 
 ---
 
-## ✨ Key Features
+# ✨ Key Features
 
 ### Community Reliability Score
 A trust-based accountability system that rewards responsible behavior and discourages misuse.
