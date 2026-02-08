@@ -1,11 +1,9 @@
 import streamlit as st
 from logic.matching import match_request_to_listings
-
 from database.database import (
     get_active_requests,
     get_active_listings
 )
-
 
 st.set_page_config(page_title="Matches | ZERO WASTED", layout="wide")
 
@@ -69,23 +67,41 @@ if not listings:
     st.info("No active listings available.")
     st.stop()
 
+# ---------- SELECT REQUEST ----------
+selected_index = st.selectbox(
+    "Select request",
+    range(len(requests)),
+    format_func=lambda i: f"{requests[i]['quantity']} × {requests[i]['type']}"
+)
+
+request = requests[selected_index]
+max_distance = request.get("max_distance_km", 5.0)
+
+st.caption(f"Showing matches within {max_distance} km")
+
+# ---------- SHOW REQUEST ----------
+st.markdown(f"""
+<div class="card">
+  <strong>{request['quantity']} × {request['type']}</strong><br>
+  <span class="sub">
+    Request location: {request.get('location_label', 'Unknown')}
+  </span>
+</div>
+""", unsafe_allow_html=True)
+
 # ---------- MATCHING ----------
-for req in requests:
-    matches = match_request_to_listings(req, listings)
+matches = match_request_to_listings(
+    request,
+    listings,
+    max_distance_km=max_distance
+)
 
-    st.markdown(f"""
-    <div class="card">
-      <strong>{req['quantity']} × {req['type']}</strong><br>
-      <span class="sub">
-        Request location: {req.get('location_label', 'Unknown')}
-      </span>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if not matches:
-        st.warning("No suitable listings found for this request.")
-        continue
-
+if not matches:
+    st.warning(
+        f"No listings found within {max_distance} km. "
+        "Try increasing your distance range."
+    )
+else:
     for m in matches:
         listing = m["listing"]
         dist = m["distance_km"]

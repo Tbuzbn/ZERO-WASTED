@@ -90,6 +90,15 @@ with st.form("request_form"):
         placeholder="Any context that might help with matching",
         height=110
     )
+    
+    max_distance_km = st.slider(
+    "Maximum distance you're willing to travel (km)",
+    min_value=1,
+    max_value=25,
+    value=5,
+    step=1
+    )
+
 
     requester_type = st.radio(
         "Requester Type",
@@ -114,6 +123,7 @@ if submitted:
 
     payload = {
         "type": resource_type,
+        "max_distance_km": max_distance_km,
         "quantity": int(quantity),
         "message": request_message.strip(),
         "requester_type": requester_type,
