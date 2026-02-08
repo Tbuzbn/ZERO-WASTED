@@ -31,6 +31,9 @@ def get_active_listings():
         .find({"status": "active"})
         .sort("created_at", -1)
     )
+    
+def get_active_requests():
+    return list(requests_col.find({"status": "active"}))
 
 def get_total_requests() -> int:
     return requests_col.count_documents({})
