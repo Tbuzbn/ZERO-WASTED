@@ -99,7 +99,7 @@ INDIVIDUALS = [
         "logo": "https://api.dicebear.com/7.x/initials/svg?seed=M"
     },
     {
-        "name": "Rahul",
+        "name": "Rahul (YOU)",
         "score": 80,
         "logo": "https://api.dicebear.com/7.x/initials/svg?seed=R"
     },

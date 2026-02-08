@@ -9,7 +9,7 @@ st.set_page_config(page_title="Contribute | ZERO WASTED", layout="centered")
 ACCENT = "#22c55e"
 MUTED = "#9ca3af"
 
-# ---------- GLOBAL STYLE ----------
+# ---------- STYLE ----------
 st.markdown("""
 <style>
 .card {
